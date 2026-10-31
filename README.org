@@ -1723,6 +1723,8 @@ When =evil-ghostel-mode= is active:
   #+end_src
 - *Insert/append* (=i=, =a=, =I=, =A=) sync the terminal cursor to point before entering
   insert state.
+- *Open line* (=o=, =O=) signals a =user-error= at a live shell prompt and sends
+  nothing to the shell.  Elsewhere they run the Evil commands.
 - In normal state, prompt jumps (=[[=, =]]=), search, and minibuffer jumps
   stay in semi-char mode.  Entering insert state from copy or Emacs mode
   returns to the terminal; entering copy or Emacs mode from insert state

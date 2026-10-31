@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- evil-ghostel: `o` and `O` signal a `user-error` at a live shell prompt.
+  Evil's commands inserted a newline the shell never saw, which put the
+  buffer and the terminal cursor out of step.
+
 ## [0.60.0] — 2026-10-29
 
 ### Added
