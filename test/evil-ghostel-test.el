@@ -117,6 +117,15 @@ literal key."
                (lookup-key (evil-get-auxiliary-keymap
                             evil-ghostel-mode-map 'visual)
                            [remap evil-delete])))
+   ;; Opening a line is normal-state only.
+   (should (eq #'evil-ghostel-open-above
+               (lookup-key (evil-get-auxiliary-keymap
+                            evil-ghostel-mode-map 'normal)
+                           [remap evil-open-above])))
+   (should (eq #'evil-ghostel-open-below
+               (lookup-key (evil-get-auxiliary-keymap
+                            evil-ghostel-mode-map 'normal)
+                           [remap evil-open-below])))
    ;; Literal key bindings must NOT be present — that would shadow
    ;; user remappings of the underlying evil commands.
    (should-not (lookup-key (evil-get-auxiliary-keymap
@@ -1862,6 +1871,38 @@ The cursor is at column 2; `sent' collects the keys sent to the terminal."
       (should (= (point) 13))
       (should (evil-insert-state-p))
       (should-not (member "e" keys-sent)))))
+
+(ert-deftest evil-ghostel-test-open-line-signals-at-prompt ()
+  "O and o signal `user-error' at a live prompt and leave everything alone."
+  (dolist (command '(evil-ghostel-open-above evil-ghostel-open-below))
+    (evil-ghostel-test--with-input-fixture "$ " "hello"
+      (evil-normal-state)
+      (let ((text (buffer-string))
+            (pos (point))
+            (sent '()))
+        (cl-letf (((symbol-function 'ghostel--send-encoded)
+                   (lambda (&rest args) (push args sent)))
+                  ((symbol-function 'ghostel--paste-text)
+                   (lambda (&rest args) (push args sent))))
+          (should-error (funcall command) :type 'user-error))
+        (should (evil-normal-state-p))
+        (should (equal text (buffer-string)))
+        (should (= pos (point)))
+        (should-not sent)))))
+
+(ert-deftest evil-ghostel-test-open-line-falls-back-outside-prompt ()
+  "O and o run the evil command when no live prompt is active."
+  (dolist (commands '((evil-ghostel-open-above . evil-open-above)
+                      (evil-ghostel-open-below . evil-open-below)))
+    (evil-ghostel-test--with-line-mode "$ echo hello" 3 13
+      (evil-normal-state)
+      (let ((called '()))
+        (cl-letf (((symbol-function (cdr commands))
+                   (lambda (&rest _)
+                     (interactive)
+                     (push (cdr commands) called))))
+          (funcall (car commands)))
+        (should (equal (list (cdr commands)) called))))))
 
 (ert-deftest evil-ghostel-test-passthrough-ctrl-prefers-local-map-outside-semi-char ()
   "Outside semi-char, the local map's binding wins over `evil-insert-state-map'.

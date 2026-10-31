@@ -20,9 +20,9 @@
 ;; the commands that drive the shell's line editor are customized:
 ;; operators (d c x s r and line variants) clamp their range to
 ;; [input-start, input-end] and apply it over the PTY (arrows, backspaces,
-;; bracketed paste); i a I A drive the shell cursor to point; ^ jumps past
-;; the prompt; j / G stay on the live prompt; p / P paste; u sends
-;; readline undo.
+;; bracketed paste); i a I A drive the shell cursor to point; o O signal
+;; a `user-error' at the prompt; ^ jumps past the prompt; j / G stay on
+;; the live prompt; p / P paste; u sends readline undo.
 ;;
 ;; Outside semi-char input mode (`line' / `copy' / `emacs' / `char' modes,
 ;; or an alt-screen TUI) every command falls through to `evil-*'.
@@ -610,6 +610,22 @@ $ would walk into non-typed cells).  Off the cursor row, unchanged."
     (evil-insert-state 1))
    (t (call-interactively #'evil-append-line))))
 
+(defun evil-ghostel--open-line (open-command)
+  "Run OPEN-COMMAND, or signal a `user-error' at a live prompt."
+  (when (evil-ghostel--prompt-active-p)
+    (user-error "Cannot open a line in the shell prompt; use I or A"))
+  (call-interactively open-command))
+
+(defun evil-ghostel-open-above ()
+  "Open a line above point, except at a live shell prompt."
+  (interactive)
+  (evil-ghostel--open-line #'evil-open-above))
+
+(defun evil-ghostel-open-below ()
+  "Open a line below point, except at a live shell prompt."
+  (interactive)
+  (evil-ghostel--open-line #'evil-open-below))
+
 
 ;; Delete
 
@@ -879,7 +895,9 @@ rather than forward-delete in the shell."
                   [remap evil-insert-line]          #'evil-ghostel-insert-line
                   [remap evil-append]               #'evil-ghostel-append
                   [remap evil-append-line]          #'evil-ghostel-append-line
-                  [remap evil-next-line]            #'evil-ghostel-next-line
+                  [remap evil-open-above]           #'evil-ghostel-open-above
+                  [remap evil-open-below]           #'evil-ghostel-open-below
+                  [remap evil-next-line]           #'evil-ghostel-next-line
                   [remap evil-goto-line]            #'evil-ghostel-goto-cursor
                   "[["                              #'ghostel-previous-prompt
                   "]]"                              #'ghostel-next-prompt)
